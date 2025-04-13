@@ -16,6 +16,14 @@
   ],
   "routes": [
     {
+      "src": "/app.js",
+      "dest": "/app.js"
+    },
+    {
+      "src": "/styles.css",
+      "dest": "/styles.css"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
