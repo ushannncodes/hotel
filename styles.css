@@ -144,7 +144,11 @@ body {
 
 /* Card hover effects */
 .hotel-card {
-  @apply transition-transform duration-300 hover:scale-[1.02];
+  transition: transform 0.3s ease;
+}
+
+.hotel-card:hover {
+  transform: scale(1.02);
 }
 
 /* Custom scrollbar */
@@ -153,16 +157,22 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background-color: #F3F4F6;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+  background-color: #D1D5DB;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #9CA3AF;
 }
 
 /* Loading button */
 .loading-button {
-  @apply relative overflow-hidden;
+  position: relative;
+  overflow: hidden;
 }
 
 .loading-button::after {
