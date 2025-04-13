@@ -690,49 +690,75 @@ const screens = [
     return screen;
   },
 
-  // Q6 - Budget Range
+  // Q6 - Budget
   () => {
     const screen = document.createElement('div');
     screen.className = 'p-6';
     screen.innerHTML = `
       <h2 class="text-2xl font-bold mb-6 text-green-800">What's your budget?</h2>
-      <div class="grid grid-cols-3 gap-3 mb-8" id="budget-options">
-        ${["$", "$$", "$$$"]
-          .map(budget => `
-            <button 
-              data-value="${budget}"
-              class="budget-option option-button ${state.quizData.budget === budget ? 'selected' : ''}"
-            >
-              <div class="flex flex-col items-center">
-                <span class="text-xl font-bold">${budget}</span>
-                <span class="text-xs text-gray-500 mt-2">
-                  ${budget === "$" ? "Budget" : budget === "$$" ? "Mid-range" : "Luxury"}
-                </span>
-                ${state.quizData.budget === budget 
-                  ? '<i data-feather="check-circle" class="text-green-500 w-5 h-5 mt-2"></i>' 
-                  : ''}
-              </div>
-            </button>
-          `).join('')}
+      <div class="price-slider">
+        <div class="price-display" id="price-display">$$</div>
+        <input 
+          type="range" 
+          id="budget-slider" 
+          min="0" 
+          max="2" 
+          step="1" 
+          value="${state.quizData.budget === '$' ? 0 : state.quizData.budget === '$$' ? 1 : 2}"
+        />
+        <div class="price-labels">
+          <span class="price-label ${state.quizData.budget === '$' ? 'active' : ''}" data-value="$">Low ($)</span>
+          <span class="price-label ${state.quizData.budget === '$$' ? 'active' : ''}" data-value="$$">Mid ($$)</span>
+          <span class="price-label ${state.quizData.budget === '$$$' ? 'active' : ''}" data-value="$$$">High ($$$)</span>
+        </div>
       </div>
       <div class="flex justify-between mt-8">
         <button id="back-btn" class="btn-secondary">
           <i data-feather="arrow-left" class="w-4 h-4"></i> Back
         </button>
         <button id="next-btn" class="btn-primary">
-          Find My Hotels <i data-feather="search" class="w-4 h-4"></i>
+          Next <i data-feather="arrow-right" class="w-4 h-4"></i>
         </button>
       </div>
     `;
 
-    screen.querySelectorAll('.budget-option').forEach(btn => {
-      btn.addEventListener('click', () => {
-        updateQuizData('budget', btn.dataset.value);
+    const slider = screen.querySelector('#budget-slider');
+    const priceDisplay = screen.querySelector('#price-display');
+    const priceLabels = screen.querySelectorAll('.price-label');
+
+    // Update price display and labels when slider changes
+    slider.addEventListener('input', (e) => {
+      const value = parseInt(e.target.value);
+      const price = ['$', '$$', '$$$'][value];
+      priceDisplay.textContent = price;
+      
+      // Update active label
+      priceLabels.forEach(label => {
+        label.classList.toggle('active', label.dataset.value === price);
+      });
+    });
+
+    // Allow clicking on labels to set value
+    priceLabels.forEach(label => {
+      label.addEventListener('click', () => {
+        const value = label.dataset.value;
+        const index = ['$', '$$', '$$$'].indexOf(value);
+        slider.value = index;
+        priceDisplay.textContent = value;
+        
+        // Update active label
+        priceLabels.forEach(l => {
+          l.classList.toggle('active', l.dataset.value === value);
+        });
       });
     });
 
     screen.querySelector('#back-btn').addEventListener('click', handleBack);
-    screen.querySelector('#next-btn').addEventListener('click', handleNext);
+    screen.querySelector('#next-btn').addEventListener('click', () => {
+      const value = ['$', '$$', '$$$'][parseInt(slider.value)];
+      updateQuizData('budget', value);
+      handleNext();
+    });
 
     return screen;
   },
