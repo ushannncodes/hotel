@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Best Fit Quiz</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: .5;
+      }
+    }
+    .progress-bar {
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="app" class="max-w-md mx-auto bg-white min-h-screen flex flex-col relative">
+    <!-- Progress bar -->
+    <div id="progress-container" class="w-full bg-gray-200 h-1 hidden">
+      <div id="progress-bar" class="bg-blue-600 h-1 progress-bar" style="width: 0%"></div>
+    </div>
+    
+    <!-- Main content -->
+    <div id="content" class="flex-grow flex flex-col"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+  <script>
+    // State management
+    const state = {
+      currentScreen: 0,
+      quizData: {
+        location: '',
+        mood: [],
+        priority: '',
+        crowd: '',
+        roomFeatures: [],
+        extras: [],
+        budget: '$$'
+      }
+    };
+
+    // Mock hotel results
+    const hotelResults = [
+      {
+        name: "Sakura Retreat Tokyo",
+        image: "https://via.placeholder.com/400x250",
+        summary: "Perfect for your chill & relaxed vibe with amazing sleep quality",
+        moodScore: 98,
+        sleepScore: 95,
+        distance: "5 min to attractions"
+      },
+      {
+        name: "Urban Oasis Boutique",
+        image: "https://via.placeholder.com/400x250",
+        summary: "Minimalist design with the huge bed you wanted",
+        moodScore: 94,
+        sleepScore: 92, 
+        distance: "10 min to city center"
+      },
+      {
+        name: "Serenity Lodge",
+        image: "https://via.placeholder.com/400x250",
+        summary: "Quiet location with bathtub and balcony views",
+        moodScore: 91,
+        sleepScore: 89,
+        distance: "15 min to attractions"
+      }
+    ];
+
+    // DOM elements
+    const content = document.getElementById('content');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+
+    // Navigation functions
+    function goToResults() {
+      state.currentScreen = 8;
+      renderScreen();
+    }
+
+    function handleNext() {
+      if (state.currentScreen === 6) {
+        // Move to loading screen
+        state.currentScreen = 7;
+        renderScreen();
+        
+        // Set a timeout to automatically move to results page after 2 seconds
+        setTimeout(goToResults, 2000);
+      } else {
+        state.currentScreen += 1;
+        renderScreen();
+      }
+    }
+
+    function handleBack() {
+      state.currentScreen -= 1;
+      renderScreen();
+    }
+
+    function startOver() {
+      state.currentScreen = 0;
+      state.quizData = {
+        location: '',
+        mood: [],
+        priority: '',
+        crowd: '',
+        roomFeatures: [],
+        extras: [],
+        budget: '$$'
+      };
+      renderScreen();
+    }
+
+    // Data update functions
+    function updateQuizData(field, value) {
+      state.quizData[field] = value;
+      renderScreen();
+    }
+
+    function toggleSelection(field, value) {
+      if (state.quizData[field].includes(value)) {
+        state.quizData[field] = state.quizData[field].filter(item => item !== value);
+      } else {
+        state.quizData[field] = [...state.quizData[field], value];
+      }
+      renderScreen();
+    }
+
+    // UI rendering functions
+    function renderScreen() {
+      // Update progress bar
+      if (state.currentScreen > 0 && state.currentScreen < 8) {
+        progressContainer.classList.remove('hidden');
+        progressBar.style.width = `${(state.currentScreen / 7) * 100}%`;
+      } else {
+        progressContainer.classList.add('hidden');
+      }
+
+      // Clear content
+      content.innerHTML = '';
+
+      // Render the current screen
+      content.appendChild(screens[state.currentScreen]());
+
+      // Initialize Feather icons
+      feather.replace();
+    }
+
+    // Screen templates
+    const screens = [
+      // Landing Page
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'flex flex-col items-center justify-center h-full text-center p-6';
+        screen.innerHTML = `
+          <div class="bg-blue-50 p-4 rounded-full mb-6">
+            <i data-feather="home" class="w-12 h-12 text-blue-500"></i>
+          </div>
+          <h1 class="text-3xl font-bold mb-3 text-blue-800">Find Your Perfect Stay in 30 Seconds</h1>
+          <p class="text-gray-600 mb-8">No endless scrolling. Just answer a few quick questions and get your best hotel matches.</p>
+          <button id="start-btn" class="flex items-center justify-center bg-blue-600 text-white py-4 px-8 rounded-full font-semibold shadow-md hover:bg-blue-700 transition w-full max-w-xs">
+            Start Quiz <i data-feather="arrow-right" class="ml-2 w-5 h-5"></i>
+          </button>
+        `;
+        screen.querySelector('#start-btn').addEventListener('click', handleNext);
+        return screen;
+      },
+
+      // Q0 - Location
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'p-6';
+        screen.innerHTML = `
+          <h2 class="text-2xl font-bold mb-6 text-blue-800">Where are you headed?</h2>
+          <div class="relative mb-6">
+            <i data-feather="map-pin" class="absolute left-3 top-3 text-gray-400"></i>
+            <input 
+              type="text" 
+              id="location-input"
+              placeholder="Enter a destination..." 
+              class="w-full p-3 pl-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value="${state.quizData.location}"
+            />
+          </div>
+          <div class="mb-6">
+            <div class="flex flex-wrap gap-2 mb-4">
+              <button class="location-suggestion bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-full text-sm">Tokyo</button>
+              <button class="location-suggestion bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-full text-sm">Bali</button>
+              <button class="location-suggestion bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-full text-sm">Paris</button>
+              <button class="location-suggestion bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-full text-sm">New York</button>
+            </div>
+            <button class="text-blue-600 flex items-center text-sm" id="anywhere-btn">
+              <span>Anywhere / Surprise Me</span>
+              <i data-feather="arrow-right" class="ml-1 w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="flex justify-between mt-8">
+            <button id="back-btn" class="flex items-center justify-center border border-gray-300 text-gray-700 py-3 px-6 rounded-full hover:bg-gray-100 transition">
+              <i data-feather="arrow-left" class="mr-2 w-4 h-4"></i> Back
+            </button>
+            <button id="next-btn" class="flex items-center justify-center bg-blue-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:bg-blue-700 transition">
+              Next <i data-feather="arrow-right" class="ml-2 w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        screen.querySelector('#location-input').addEventListener('input', (e) => {
+          updateQuizData('location', e.target.value);
+        });
+
+        screen.querySelectorAll('.location-suggestion').forEach(btn => {
+          btn.addEventListener('click', () => {
+            updateQuizData('location', btn.textContent);
+          });
+        });
+
+        screen.querySelector('#anywhere-btn').addEventListener('click', () => {
+          updateQuizData('location', 'Anywhere');
+        });
+
+        screen.querySelector('#back-btn').addEventListener('click', handleBack);
+        screen.querySelector('#next-btn').addEventListener('click', handleNext);
+
+        return screen;
+      },
+
+      // Q1 - Mood Selector
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'p-6';
+        screen.innerHTML = `
+          <h2 class="text-2xl font-bold mb-6 text-blue-800">What's your vibe for this trip?</h2>
+          <p class="text-gray-500 mb-4">Select all that apply</p>
+          <div class="grid grid-cols-1 gap-3 mb-8" id="mood-options">
+            ${["Chill & Relaxed", "Excited & Adventurous", "Productive & Focused", "Luxurious & Pampered", "Budget-Friendly & Practical"]
+              .map(mood => `
+                <button 
+                  data-value="${mood}"
+                  class="mood-option flex items-center justify-between p-4 rounded-xl border ${
+                    state.quizData.mood.includes(mood) 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200"
+                  }"
+                >
+                  <span>${mood}</span>
+                  ${state.quizData.mood.includes(mood) 
+                    ? '<i data-feather="check-circle" class="text-blue-500 w-5 h-5"></i>' 
+                    : ''}
+                </button>
+              `).join('')}
+          </div>
+          <div class="flex justify-between mt-8">
+            <button id="back-btn" class="flex items-center justify-center border border-gray-300 text-gray-700 py-3 px-6 rounded-full hover:bg-gray-100 transition">
+              <i data-feather="arrow-left" class="mr-2 w-4 h-4"></i> Back
+            </button>
+            <button id="next-btn" class="flex items-center justify-center bg-blue-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:bg-blue-700 transition">
+              Next <i data-feather="arrow-right" class="ml-2 w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        screen.querySelectorAll('.mood-option').forEach(btn => {
+          btn.addEventListener('click', () => {
+            toggleSelection('mood', btn.dataset.value);
+          });
+        });
+
+        screen.querySelector('#back-btn').addEventListener('click', handleBack);
+        screen.querySelector('#next-btn').addEventListener('click', handleNext);
+
+        return screen;
+      },
+
+      // Q2 - Trip Priority
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'p-6';
+        screen.innerHTML = `
+          <h2 class="text-2xl font-bold mb-6 text-blue-800">What matters most to you?</h2>
+          <div class="grid grid-cols-1 gap-3 mb-8" id="priority-options">
+            ${["Great Sleep", "Location Convenience", "Instagram-worthy Design", "Top-notch Amenities", "Price"]
+              .map(priority => `
+                <button 
+                  data-value="${priority}"
+                  class="priority-option flex items-center justify-between p-4 rounded-xl border ${
+                    state.quizData.priority === priority 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200"
+                  }"
+                >
+                  <span>${priority}</span>
+                  ${state.quizData.priority === priority 
+                    ? '<i data-feather="check-circle" class="text-blue-500 w-5 h-5"></i>' 
+                    : ''}
+                </button>
+              `).join('')}
+          </div>
+          <div class="flex justify-between mt-8">
+            <button id="back-btn" class="flex items-center justify-center border border-gray-300 text-gray-700 py-3 px-6 rounded-full hover:bg-gray-100 transition">
+              <i data-feather="arrow-left" class="mr-2 w-4 h-4"></i> Back
+            </button>
+            <button id="next-btn" class="flex items-center justify-center bg-blue-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:bg-blue-700 transition">
+              Next <i data-feather="arrow-right" class="ml-2 w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        screen.querySelectorAll('.priority-option').forEach(btn => {
+          btn.addEventListener('click', () => {
+            updateQuizData('priority', btn.dataset.value);
+          });
+        });
+
+        screen.querySelector('#back-btn').addEventListener('click', handleBack);
+        screen.querySelector('#next-btn').addEventListener('click', handleNext);
+
+        return screen;
+      },
+
+      // Q3 - Crowd Preference
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'p-6';
+        screen.innerHTML = `
+          <h2 class="text-2xl font-bold mb-6 text-blue-800">How do you feel about crowds?</h2>
+          <div class="grid grid-cols-1 gap-3 mb-8" id="crowd-options">
+            ${["Love them!", "Somewhere in between", "Prefer quiet hideouts"]
+              .map(crowd => `
+                <button 
+                  data-value="${crowd}"
+                  class="crowd-option flex items-center justify-between p-4 rounded-xl border ${
+                    state.quizData.crowd === crowd 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200"
+                  }"
+                >
+                  <span>${crowd}</span>
+                  ${state.quizData.crowd === crowd 
+                    ? '<i data-feather="check-circle" class="text-blue-500 w-5 h-5"></i>' 
+                    : ''}
+                </button>
+              `).join('')}
+          </div>
+          <div class="flex justify-between mt-8">
+            <button id="back-btn" class="flex items-center justify-center border border-gray-300 text-gray-700 py-3 px-6 rounded-full hover:bg-gray-100 transition">
+              <i data-feather="arrow-left" class="mr-2 w-4 h-4"></i> Back
+            </button>
+            <button id="next-btn" class="flex items-center justify-center bg-blue-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:bg-blue-700 transition">
+              Next <i data-feather="arrow-right" class="ml-2 w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        screen.querySelectorAll('.crowd-option').forEach(btn => {
+          btn.addEventListener('click', () => {
+            updateQuizData('crowd', btn.dataset.value);
+          });
+        });
+
+        screen.querySelector('#back-btn').addEventListener('click', handleBack);
+        screen.querySelector('#next-btn').addEventListener('click', handleNext);
+
+        return screen;
+      },
+
+      // Q4 - Dream Room Features
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'p-6';
+        screen.innerHTML = `
+          <h2 class="text-2xl font-bold mb-6 text-blue-800">What's your dream room like?</h2>
+          <p class="text-gray-500 mb-4">Select all that apply</p>
+          <div class="grid grid-cols-2 gap-3 mb-8" id="room-options">
+            ${["Big Windows", "Huge Bed", "Bathtub", "Balcony", "Minimalist Vibes", "Cozy Atmosphere"]
+              .map(feature => `
+                <button 
+                  data-value="${feature}"
+                  class="room-option flex items-center justify-center p-3 rounded-xl border ${
+                    state.quizData.roomFeatures.includes(feature) 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200"
+                  }"
+                >
+                  <div class="flex flex-col items-center">
+                    <span class="text-sm">${feature}</span>
+                    ${state.quizData.roomFeatures.includes(feature) 
+                      ? '<i data-feather="check-circle" class="text-blue-500 w-4 h-4 mt-1"></i>' 
+                      : ''}
+                  </div>
+                </button>
+              `).join('')}
+          </div>
+          <div class="flex justify-between mt-8">
+            <button id="back-btn" class="flex items-center justify-center border border-gray-300 text-gray-700 py-3 px-6 rounded-full hover:bg-gray-100 transition">
+              <i data-feather="arrow-left" class="mr-2 w-4 h-4"></i> Back
+            </button>
+            <button id="next-btn" class="flex items-center justify-center bg-blue-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:bg-blue-700 transition">
+              Next <i data-feather="arrow-right" class="ml-2 w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        screen.querySelectorAll('.room-option').forEach(btn => {
+          btn.addEventListener('click', () => {
+            toggleSelection('roomFeatures', btn.dataset.value);
+          });
+        });
+
+        screen.querySelector('#back-btn').addEventListener('click', handleBack);
+        screen.querySelector('#next-btn').addEventListener('click', handleNext);
+
+        return screen;
+      },
+
+      // Q5 - Must-Have Extras
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'p-6';
+        screen.innerHTML = `
+          <h2 class="text-2xl font-bold mb-6 text-blue-800">Any must-haves?</h2>
+          <p class="text-gray-500 mb-4">Optional - select any that apply</p>
+          <div class="grid grid-cols-1 gap-3 mb-8" id="extras-options">
+            ${["Free Breakfast", "Near Public Transport", "Pet-friendly", "Eco-friendly Hotel"]
+              .map(extra => `
+                <button 
+                  data-value="${extra}"
+                  class="extras-option flex items-center justify-between p-4 rounded-xl border ${
+                    state.quizData.extras.includes(extra) 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200"
+                  }"
+                >
+                  <span>${extra}</span>
+                  ${state.quizData.extras.includes(extra) 
+                    ? '<i data-feather="check-circle" class="text-blue-500 w-5 h-5"></i>' 
+                    : ''}
+                </button>
+              `).join('')}
+          </div>
+          <div class="flex justify-between mt-8">
+            <button id="back-btn" class="flex items-center justify-center border border-gray-300 text-gray-700 py-3 px-6 rounded-full hover:bg-gray-100 transition">
+              <i data-feather="arrow-left" class="mr-2 w-4 h-4"></i> Back
+            </button>
+            <button id="next-btn" class="flex items-center justify-center bg-blue-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:bg-blue-700 transition">
+              Next <i data-feather="arrow-right" class="ml-2 w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        screen.querySelectorAll('.extras-option').forEach(btn => {
+          btn.addEventListener('click', () => {
+            toggleSelection('extras', btn.dataset.value);
+          });
+        });
+
+        screen.querySelector('#back-btn').addEventListener('click', handleBack);
+        screen.querySelector('#next-btn').addEventListener('click', handleNext);
+
+        return screen;
+      },
+
+      // Q6 - Budget Range
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'p-6';
+        screen.innerHTML = `
+          <h2 class="text-2xl font-bold mb-6 text-blue-800">What's your budget?</h2>
+          <div class="grid grid-cols-3 gap-3 mb-8" id="budget-options">
+            ${["$", "$$", "$$$"]
+              .map(budget => `
+                <button 
+                  data-value="${budget}"
+                  class="budget-option flex flex-col items-center justify-center p-6 rounded-xl border ${
+                    state.quizData.budget === budget 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200"
+                  }"
+                >
+                  <span class="text-xl font-bold">${budget}</span>
+                  <span class="text-xs text-gray-500 mt-2">
+                    ${budget === "$" ? "Budget" : budget === "$$" ? "Mid-range" : "Luxury"}
+                  </span>
+                  ${state.quizData.budget === budget 
+                    ? '<i data-feather="check-circle" class="text-blue-500 w-5 h-5 mt-2"></i>' 
+                    : ''}
+                </button>
+              `).join('')}
+          </div>
+          <div class="flex justify-between mt-8">
+            <button id="back-btn" class="flex items-center justify-center border border-gray-300 text-gray-700 py-3 px-6 rounded-full hover:bg-gray-100 transition">
+              <i data-feather="arrow-left" class="mr-2 w-4 h-4"></i> Back
+            </button>
+            <button id="next-btn" class="flex items-center justify-center bg-blue-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:bg-blue-700 transition">
+              Find My Hotels <i data-feather="search" class="ml-2 w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        screen.querySelectorAll('.budget-option').forEach(btn => {
+          btn.addEventListener('click', () => {
+            updateQuizData('budget', btn.dataset.value);
+          });
+        });
+
+        screen.querySelector('#back-btn').addEventListener('click', handleBack);
+        screen.querySelector('#next-btn').addEventListener('click', handleNext);
+
+        return screen;
+      },
+
+      // Loading screen
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'flex flex-col items-center justify-center h-full p-6 text-center';
+        screen.innerHTML = `
+          <div class="animate-pulse mb-6">
+            <i data-feather="search" class="w-16 h-16 text-blue-500"></i>
+          </div>
+          <h2 class="text-2xl font-bold mb-3 text-blue-800">Hunting down your dream stay...</h2>
+          <p class="text-gray-600 mb-8">Ooh cozy vibes coming your way!</p>
+          <div class="w-full max-w-md bg-gray-200 rounded-full h-2.5 mb-6">
+            <div class="bg-blue-600 h-2.5 rounded-full w-3/4 animate-pulse"></div>
+          </div>
+          
+          <!-- Added manual continue button -->
+          <button id="continue-btn" class="flex items-center justify-center bg-blue-600 text-white py-3 px-6 rounded-full font-semibold shadow-md hover:bg-blue-700 transition mt-4">
+            Continue to Results <i data-feather="arrow-right" class="ml-2 w-4 h-4"></i>
+          </button>
+        `;
+        
+        // Add event listener after the screen is rendered
+        setTimeout(() => {
+          const continueBtn = document.getElementById('continue-btn');
+          if (continueBtn) {
+            continueBtn.addEventListener('click', goToResults);
+          }
+        }, 100);
+        
+        return screen;
+      },
+
+      // Results page
+      () => {
+        const screen = document.createElement('div');
+        screen.className = 'p-6';
+        
+        const vibe = state.quizData.mood.length > 0 
+          ? state.quizData.mood[0].toLowerCase() 
+          : "perfect";
+          
+        screen.innerHTML = `
+          <h2 class="text-2xl font-bold mb-2 text-blue-800">Your Perfect Matches</h2>
+          <p class="text-gray-500 mb-6">Based on your ${vibe} vibe</p>
+          
+          <div class="space-y-6" id="hotel-results">
+            ${hotelResults.map((hotel, index) => `
+              <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <img 
+                  src="${hotel.image}" 
+                  alt="${hotel.name}" 
+                  class="w-full h-48 object-cover"
+                />
+                <div class="p-4">
+                  <h3 class="font-bold text-lg">${hotel.name}</h3>
+                  <p class="text-gray-600 text-sm mb-3">${hotel.summary}</p>
+                  
+                  <div class="flex justify-between text-sm mb-3">
+                    <div class="flex items-center">
+                      <i data-feather="smile" class="w-4 h-4 text-green-500 mr-1"></i>
+                      <span>Mood: ${hotel.moodScore}%</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i data-feather="home" class="w-4 h-4 text-purple-500 mr-1"></i>
+                      <span>Sleep: ${hotel.sleepScore}%</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i data-feather="clock" class="w-4 h-4 text-blue-500 mr-1"></i>
+                      <span>${hotel.distance}</span>
+                    </div>
+                  </div>
+                  
+                  <button class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+                    View Details
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          
+          <button class="w-full mt-6 border border-blue-600 text-blue-600 py-3 rounded-lg font-medium hover:bg-blue-50 transition">
+            Show More Like This
+          </button>
+          
+          <button id="start-over-btn" class="w-full mt-4 text-gray-500 py-2 rounded-lg font-medium hover:text-gray-700 transition">
+            Start Over
+          </button>
+        `;
+
+        screen.querySelector('#start-over-btn').addEventListener('click', startOver);
+
+        return screen;
+      }
+    ];
+
+    // Initialize app
+    renderScreen();
+    
+    // Debug helper - add this to help troubleshoot if needed
+    window.goToResults = goToResults;
+  </script>
+</body>
+</html>
