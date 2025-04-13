@@ -41,7 +41,16 @@
     <div id="content" class="flex-grow flex flex-col"></div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
   <script src="app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      feather.replace();
+      // Initialize the app
+      if (typeof renderScreen === 'function') {
+        renderScreen();
+      }
+    });
+  </script>
 </body>
 </html>
